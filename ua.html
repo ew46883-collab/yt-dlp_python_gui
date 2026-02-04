@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User-Agent 检测与复制工具</title>
+    <style>
+        /* 页面基础样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* 卡片容器样式 */
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* 文本框样式 */
+        #ua-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #555;
+            background-color: #fafafa;
+            box-sizing: border-box; /* 确保padding不撑大宽度 */
+            font-family: monospace; /* 等宽字体更适合看代码 */
+            word-break: break-all;
+        }
+
+        #ua-input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        /* 按钮样式 */
+        #copy-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #copy-btn:hover {
+            background-color: #0056b3;
+        }
+
+        #copy-btn.copied {
+            background-color: #28a745; /* 复制成功变绿 */
+        }
+        
+        /* 提示信息 */
+        .info {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>当前浏览器 User-Agent</h2>
+        <input type="text" id="ua-input" readonly placeholder="正在检测...">
+        
+        <br>
+        
+        <button id="copy-btn">一键复制</button>
+        
+        <div class="info">点击按钮即可将 User-Agent 复制到剪贴板</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 获取 DOM 元素
+            const uaInput = document.getElementById('ua-input');
+            const copyBtn = document.getElementById('copy-btn');
+
+            // 2. 获取当前浏览器的 User-Agent
+            const userAgent = navigator.userAgent;
+
+            // 3. 将 UA 填充到文本框中
+            uaInput.value = userAgent;
+
+            // 4. 为按钮添加点击事件
+            copyBtn.addEventListener('click', function() {
+                // 选中输入框中的文本（视觉反馈）
+                uaInput.select();
+                uaInput.setSelectionRange(0, 99999); // 兼容移动端
+
+                // 使用现代 Clipboard API 复制
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(userAgent).then(handleSuccess).catch(handleError);
+                } else {
+                    // 兼容旧版浏览器的降级方案
+                    try {
+                        document.execCommand('copy');
+                        handleSuccess();
+                    } catch (err) {
+                        handleError(err);
+                    }
+                }
+            });
+
+            // 复制成功的处理函数
+            function handleSuccess() {
+                const originalText = copyBtn.innerText;
+                
+                // 改变按钮样式和文字
+                copyBtn.innerText = "复制成功！";
+                copyBtn.classList.add('copied');
+
+                // 2秒后恢复原状
+                setTimeout(() => {
+                    copyBtn.innerText = originalText;
+                    copyBtn.classList.remove('copied');
+                    // 取消选中状态
+                    window.getSelection().removeAllRanges();
+                }, 2000);
+            }
+
+            // 复制失败的处理函数
+            function handleError(err) {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动选择文本框内容进行复制。');
+            }
+        });
+    </script>
+</body>
+</html>

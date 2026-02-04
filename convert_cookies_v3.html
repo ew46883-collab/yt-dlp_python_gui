@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en"> <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Converter Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            color: #1a73e8;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label, select {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        input[type="file"], input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%206l5%205%205-5%202%201-7%207-7-7%202-1z%22%20fill%3D%22%23555%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        #convertButton {
+            width: 100%;
+            padding: 12px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #convertButton:hover {
+            background-color: #1558b8;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .status.success {
+            background-color: #e6f4ea;
+            color: #2e7d32;
+        }
+        .status.error {
+            background-color: #fce8e6;
+            color: #c5221f;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="form-group">
+        <label for="langSelector" data-lang-key="label_language">Language:</label>
+        <select id="langSelector">
+            <option value="en">English</option>
+            <option value="zh">简体中文</option>
+            <option value="ja">日本語</option>
+            <option value="ru">Русский</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="de">Deutsch</option>
+            <option value="it">Italiano</option>
+            <option value="ko">한국어</option>
+        </select>
+    </div>
+
+    <h1 data-lang-key="page_title">Cookie Format Converter</h1>
+    <p data-lang-key="page_description">Convert JSON format cookies to Netscape format (txt).</p>
+
+    <div class="form-group">
+        <label for="jsonFileInput" data-lang-key="label_json_file">1. Select cookies.json file:</label>
+        <input type="file" id="jsonFileInput" accept=".json">
+    </div>
+
+    <div class="form-group">
+        <label for="outputFileName" data-lang-key="label_output_file">2. Specify output file name:</label>
+        <input type="text" id="outputFileName" value="cookies.txt">
+    </div>
+
+    <button id="convertButton" data-lang-key="button_convert">Start Conversion</button>
+
+    <div id="statusMessage" class="status"></div>
+</div>
+
+<script>
+
+/**
+ * 翻译文本存储 (已更新)
+ */
+const translations = {
+    // 英文 (默认)
+    en: {
+        html_title: "Cookie Converter Tool",
+        page_title: "Cookie Format Converter",
+        page_description: "Convert JSON format cookies to Netscape format (txt).",
+        label_language: "🌏Language:",
+        label_json_file: "1. Select cookies.json file:",
+        label_output_file: "2. Specify output file name:",
+        button_convert: "Start Conversion",
+        status_no_file: "Error: Please select a JSON file first!",
+        status_no_filename: "Error: Please enter a valid output file name!",
+        status_not_list: "Error: JSON file must be a list of cookie objects!",
+        status_json_error: "Error: JSON file format is incorrect, please check the file!",
+        status_read_error: "Error: An error occurred while reading the file!",
+        status_generic_error: "An error occurred: {error}",
+        status_success: "Successfully generated {fileName}!"
+    },
+    // 中文
+    zh: {
+        html_title: "Cookie 格式转换工具",
+        page_title: "Cookie 格式转换",
+        page_description: "将 JSON 格式的 Cookie 文件转换为 Netscape 格式 (txt)。",
+        label_language: "🌏语言:",
+        label_json_file: "1. 选择 cookies.json 文件：",
+        label_output_file: "2. 指定输出文件名：",
+        button_convert: "开始转换",
+        status_no_file: "错误：请先选择一个 JSON 文件！",
+        status_no_filename: "错误：请输入有效的输出文件名！",
+        status_not_list: "错误：JSON 文件必须是包含 cookie 对象的列表！",
+        status_json_error: "错误：JSON 文件格式不正确，请检查文件内容！",
+        status_read_error: "错误：读取文件时发生错误！",
+        status_generic_error: "出错了：{error}",
+        status_success: "成功生成 {fileName}！"
+    },
+    // 日语
+    ja: {
+        html_title: "クッキー変換ツール",
+        page_title: "クッキー形式の変換",
+        page_description: "JSON 形式のクッキーを Netscape 形式 (txt) に変換します。",
+        label_language: "🌏言語:",
+        label_json_file: "1. cookies.json ファイルを選択:",
+        label_output_file: "2. 出力ファイル名を指定:",
+        button_convert: "変換開始",
+        status_no_file: "エラー：まず JSON ファイルを選択してください！",
+        status_no_filename: "エラー：有効な出力ファイル名を入力してください！",
+        status_not_list: "エラー：JSON ファイルはクッキーオブジェクトのリストでなければなりません！",
+        status_json_error: "エラー：JSON ファイルの形式が正しくありません。ファイルを確認してください！",
+        status_read_error: "エラー：ファイルの読み込み中にエラーが発生しました！",
+        status_generic_error: "エラーが発生しました: {error}",
+        status_success: "{fileName} の生成に成功しました！"
+    },
+    // 俄语
+    ru: {
+        html_title: "Конвертер файлов cookie",
+        page_title: "Конвертер формата cookie",
+        page_description: "Преобразование файлов cookie из формата JSON в формат Netscape (txt).",
+        label_language: "🌏Язык:",
+        label_json_file: "1. Выберите файл cookies.json:",
+        label_output_file: "2. Укажите имя выходного файла:",
+        button_convert: "Начать преобразование",
+        status_no_file: "Ошибка: Сначала выберите JSON-файл!",
+        status_no_filename: "Ошибка: Введите допустимое имя выходного файла!",
+        status_not_list: "Ошибка: JSON-файл должен быть списком объектов cookie!",
+        status_json_error: "Ошибка: Неверный формат JSON-файла, проверьте файл!",
+        status_read_error: "Ошибка: Произошла ошибка при чтении файла!",
+        status_generic_error: "Произошла ошибка: {error}",
+        status_success: "Файл {fileName} успешно создан!"
+    },
+    // 法语
+    fr: {
+        html_title: "Outil de conversion de cookies",
+        page_title: "Convertisseur de format de cookies",
+        page_description: "Convertissez les cookies du format JSON au format Netscape (txt).",
+        label_language: "🌏Langue:",
+        label_json_file: "1. Sélectionnez le fichier cookies.json :",
+        label_output_file: "2. Spécifiez le nom du fichier de sortie :",
+        button_convert: "Démarrer la conversion",
+        status_no_file: "Erreur : Veuillez d'abord sélectionner un fichier JSON !",
+        status_no_filename: "Erreur : Veuillez saisir un nom de fichier de sortie valide !",
+        status_not_list: "Erreur : Le fichier JSON doit être une liste d'objets cookie !",
+        status_json_error: "Erreur : Le format du fichier JSON est incorrect, veuillez vérifier le fichier !",
+        status_read_error: "Erreur : Une erreur est survenue lors de la lecture du fichier !",
+        status_generic_error: "Une erreur est survenue : {error}",
+        status_success: "{fileName} a été généré avec succès !"
+    },
+    // --- 新增语言 ---
+    // 西班牙语
+    es: {
+        html_title: "Herramienta de conversión de cookies",
+        page_title: "Convertidor de formato de cookies",
+        page_description: "Convertir cookies de formato JSON a formato Netscape (txt).",
+        label_language: "🌏Idioma:",
+        label_json_file: "1. Seleccionar archivo cookies.json:",
+        label_output_file: "2. Especificar nombre del archivo de salida:",
+        button_convert: "Iniciar conversión",
+        status_no_file: "Error: ¡Por favor, seleccione un archivo JSON primero!",
+        status_no_filename: "Error: ¡Por favor, ingrese un nombre de archivo de salida válido!",
+        status_not_list: "Error: ¡El archivo JSON debe ser una lista de objetos cookie!",
+        status_json_error: "Error: ¡El formato del archivo JSON es incorrecto, por favor revise el archivo!",
+        status_read_error: "Error: ¡Ocurrió un error al leer el archivo!",
+        status_generic_error: "Ocurrió un error: {error}",
+        status_success: "¡{fileName} generado exitosamente!"
+    },
+    // 德语
+    de: {
+        html_title: "Cookie-Konverter-Tool",
+        page_title: "Cookie-Formatkonverter",
+        page_description: "Konvertieren Sie Cookies im JSON-Format in das Netscape-Format (txt).",
+        label_language: "🌏Sprache:",
+        label_json_file: "1. cookies.json-Datei auswählen:",
+        label_output_file: "2. Ausgabedateiname angeben:",
+        button_convert: "Konvertierung starten",
+        status_no_file: "Fehler: Bitte wählen Sie zuerst eine JSON-Datei aus!",
+        status_no_filename: "Fehler: Bitte geben Sie einen gültigen Ausgabedateiname ein!",
+        status_not_list: "Fehler: Die JSON-Datei muss eine Liste von Cookie-Objekten sein!",
+        status_json_error: "Fehler: Das JSON-Dateiformat ist falsch, bitte überprüfen Sie die Datei!",
+        status_read_error: "Fehler: Beim Lesen der Datei ist ein Fehler aufgetreten!",
+        status_generic_error: "Ein Fehler ist aufgetreten: {error}",
+        status_success: "{fileName} erfolgreich generiert!"
+    },
+    // 意大利语
+    it: {
+        html_title: "Strumento di conversione cookie",
+        page_title: "Convertitore di formato cookie",
+        page_description: "Converti i cookie dal formato JSON al formato Netscape (txt).",
+        label_language: "🌏Lingua:",
+        label_json_file: "1. Seleziona il file cookies.json:",
+        label_output_file: "2. Specifica il nome del file di output:",
+        button_convert: "Avvia conversione",
+        status_no_file: "Errore: seleziona prima un file JSON!",
+        status_no_filename: "Errore: inserisci un nome file di output valido!",
+        status_not_list: "Errore: il file JSON deve essere un elenco di oggetti cookie!",
+        status_json_error: "Errore: il formato del file JSON non è corretto, controlla il file!",
+        status_read_error: "Errore: si è verificato un errore durante la lettura del file!",
+        status_generic_error: "Si è verificato un errore: {error}",
+        status_success: "{fileName} generato con successo!"
+    },
+    // 韩语
+    ko: {
+        html_title: "쿠키 변환 도구",
+        page_title: "쿠키 형식 변환기",
+        page_description: "JSON 형식 쿠키를 Netscape 형식(txt)으로 변환합니다.",
+        label_language: "🌏언어:",
+        label_json_file: "1. cookies.json 파일 선택:",
+        label_output_file: "2. 출력 파일 이름 지정:",
+        button_convert: "변환 시작",
+        status_no_file: "오류: 먼저 JSON 파일을 선택하세요!",
+        status_no_filename: "오류: 유효한 출력 파일 이름을 입력하세요!",
+        status_not_list: "오류: JSON 파일은 쿠키 객체 목록이어야 합니다!",
+        status_json_error: "오류: JSON 파일 형식이 올바르지 않습니다. 파일을 확인하세요!",
+        status_read_error: "오류: 파일을 읽는 중 오류가 발생했습니다!",
+        status_generic_error: "오류가 발생했습니다: {error}",
+        status_success: "{fileName}이(가) 성공적으로 생성되었습니다!"
+    }
+};
+
+// 存储当前选择的语言
+let currentLang = 'en'; // 默认英文
+
+/**
+ * 辅助函数：获取翻译文本
+ */
+function getTranslation(key, params = {}) {
+    let text = (translations[currentLang] && translations[currentLang][key]) || translations['en'][key];
+    if (!text) return key;
+    for (const paramKey in params) {
+        text = text.replace(new RegExp(`{${paramKey}}`, 'g'), params[paramKey]);
+    }
+    return text;
+}
+
+/**
+ * 设置页面语言
+ */
+function setLanguage(lang) {
+    if (!translations[lang]) {
+        lang = 'en';
+    }
+    
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.title = getTranslation('html_title');
+
+    document.querySelectorAll('[data-lang-key]').forEach(element => {
+        const key = element.dataset.langKey;
+        const translation = getTranslation(key);
+        if (translation) {
+            element.textContent = translation;
+        }
+    });
+
+    // 确保下拉菜单显示正确的选定语言
+    const langSelector = document.getElementById('langSelector');
+    if (langSelector.value !== lang) {
+        langSelector.value = lang;
+    }
+}
+
+/**
+ * 在页面上显示状态消息
+ */
+function displayMessage(key, type, params = {}) {
+    const statusMessage = document.getElementById('statusMessage');
+    statusMessage.textContent = getTranslation(key, params);
+    statusMessage.className = `status ${type}`;
+    statusMessage.style.display = 'block';
+}
+
+// === 页面加载和事件监听 ===
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // === 核心转换逻辑 (未改变) ===
+    const jsonFileInput = document.getElementById('jsonFileInput');
+    const outputFileNameInput = document.getElementById('outputFileName');
+    const convertButton = document.getElementById('convertButton');
+
+    convertButton.addEventListener('click', function() {
+        const file = jsonFileInput.files[0];
+        if (!file) {
+            displayMessage('status_no_file', 'error');
+            return;
+        }
+        
+        const outputFileName = outputFileNameInput.value.trim();
+        if (!outputFileName) {
+            displayMessage('status_no_filename', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const cookies = JSON.parse(event.target.result);
+                if (!Array.isArray(cookies)) {
+                    displayMessage('status_not_list', 'error');
+                    return;
+                }
+                const netscapeCookies = convertToNetscape(cookies);
+                downloadFile(netscapeCookies, outputFileName);
+                displayMessage('status_success', 'success', { fileName: outputFileName });
+            } catch (error) {
+                if (error instanceof SyntaxError) {
+                    displayMessage('status_json_error', 'error');
+                } else {
+                    displayMessage('status_generic_error', 'error', { error: error.message });
+                }
+            }
+        };
+        reader.onerror = function() {
+            displayMessage('status_read_error', 'error');
+        };
+        reader.readAsText(file);
+    });
+
+    function convertToNetscape(cookies) {
+        const header = [
+            '# Netscape HTTP Cookie File',
+            '# https://curl.se/docs/http-cookies.html',
+            '# This is a generated file! Do not edit.',
+            ''
+        ];
+        const cookieLines = cookies.map(cookie => {
+            const domain = cookie.domain || '';
+            const includeSubdomains = domain.startsWith('.') ? 'TRUE' : 'FALSE';
+            const path = cookie.path || '/';
+            const secure = cookie.secure ? 'TRUE' : 'FALSE';
+            const expiration = String(Math.floor(cookie.expirationDate || 0));
+            const name = cookie.name || '';
+            const value = cookie.value || '';
+            return [domain, includeSubdomains, path, secure, expiration, name, value].join('\t');
+        });
+        return header.join('\n') + cookieLines.join('\n');
+    }
+
+    function downloadFile(content, fileName) {
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-s8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+    
+    // === 多语言初始化逻辑 (未改变) ===
+
+    // 1. 监听语言选择器的变化
+    const langSelector = document.getElementById('langSelector');
+    langSelector.addEventListener('change', (e) => {
+        setLanguage(e.target.value);
+    });
+    
+    // 2. 严格设置默认语言为英文
+    setLanguage('en');
+});
+</script>
+
+</body>
+</html>
