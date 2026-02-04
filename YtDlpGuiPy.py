@@ -10,12 +10,13 @@ import time  # 导入时间库用于休眠
 class YtDlpGui:
     def __init__(self, root):
         self.root = root
+        self.version = 'v1.0.0'
         self.current_lang = "English"
 
         # --- 翻译字典 (新增休眠功能相关词条) ---
         self.translations = {
             "English": {
-                "title": "YouTube Batch Downloader Pro",
+                "title": "YouTube Batch Downloader Pro "+self.version,
                 "url_label": "Video URLs (one per line):",
                 "param_label": "yt-dlp Arguments:",
                 "sleep_label": "Sleep between downloads (sec):",
@@ -30,7 +31,7 @@ class YtDlpGui:
                 "status_done": "All tasks finished."
             },
             "简体中文": {
-                "title": "YouTube 批量下载器专业版",
+                "title": "YouTube 批量下载器专业版 "+self.version,
                 "url_label": "视频链接 (每行一个):",
                 "param_label": "yt-dlp 参数设置:",
                 "sleep_label": "下载间隔 (秒):",
@@ -44,48 +45,48 @@ class YtDlpGui:
                 "msg_sleeping": "休眠中... {} 秒后开始下一个任务...",
                 "status_done": "所有任务执行完毕。"
             },
-            "繁體中文": {"title": "YouTube 批量下載器專業版", "url_label": "影片連結", "param_label": "參數設置:",
+            "繁體中文": {"title": "YouTube 批量下載器專業版 "+self.version, "url_label": "影片連結", "param_label": "參數設置:",
                          "sleep_label": "下載間隔 (秒):", "reset_btn": "恢復預設", "start_btn": "開始下載",
                          "stop_btn": "強制終止", "clear_btn": "清空日誌", "log_label": "執行日誌:",
                          "msg_empty": "請輸入連結！", "msg_stop": "緊急停止。",
                          "msg_sleeping": "休眠中... {} 秒後開始下一個任務...", "status_done": "任務結束。"},
-            "日本語": {"title": "YouTube一括ダウンロード Pro", "url_label": "ビデオURL", "param_label": "引数",
+            "日本語": {"title": "YouTube一括ダウンロード Pro "+self.version, "url_label": "ビデオURL", "param_label": "引数",
                        "sleep_label": "待機時間 (秒):", "reset_btn": "リセット", "start_btn": "開始",
                        "stop_btn": "強制終了", "clear_btn": "ログ消去", "log_label": "ログ:",
                        "msg_empty": "URLを入力してください", "msg_stop": "停止しました。",
                        "msg_sleeping": "{} 秒間待機しています...", "status_done": "完了しました。"},
-            "Français": {"title": "Téléchargeur Pro", "url_label": "URLs", "param_label": "Arguments",
+            "Français": {"title": "Téléchargeur Pro "+self.version, "url_label": "URLs", "param_label": "Arguments",
                          "sleep_label": "Pause (sec):", "reset_btn": "Reset", "start_btn": "Démarrer",
                          "stop_btn": "Arrêt Forcé", "clear_btn": "Effacer", "log_label": "Log:",
                          "msg_empty": "Entrez des URLs !", "msg_stop": "Arrêté.",
                          "msg_sleeping": "Attente de {} secondes...", "status_done": "Terminé."},
-            "Italiano": {"title": "Downloader Pro", "url_label": "URL", "param_label": "Argomenti",
+            "Italiano": {"title": "Downloader Pro "+self.version, "url_label": "URL", "param_label": "Argomenti",
                          "sleep_label": "Pausa (sec):", "reset_btn": "Reset", "start_btn": "Avvia", "stop_btn": "Ferma",
                          "clear_btn": "Pulisci", "log_label": "Log:", "msg_empty": "Inserisci URL!",
                          "msg_stop": "Terminato.", "msg_sleeping": "In pausa per {} secondi...",
                          "status_done": "Completato."},
-            "Español": {"title": "Descargador Pro", "url_label": "URLs", "param_label": "Argumentos",
+            "Español": {"title": "Descargador Pro "+self.version, "url_label": "URLs", "param_label": "Argumentos",
                         "sleep_label": "Espera (seg):", "reset_btn": "Reset", "start_btn": "Iniciar",
                         "stop_btn": "Detener", "clear_btn": "Limpiar", "log_label": "Log:",
                         "msg_empty": "Ingrese URLs!", "msg_stop": "Detenido.",
                         "msg_sleeping": "Esperando {} segundos...", "status_done": "Finalizado."},
-            "Deutsch": {"title": "Downloader Pro", "url_label": "URLs", "param_label": "Parameter",
+            "Deutsch": {"title": "Downloader Pro "+self.version, "url_label": "URLs", "param_label": "Parameter",
                         "sleep_label": "Pause (Sek):", "reset_btn": "Reset", "start_btn": "Starten",
                         "stop_btn": "Stopp", "clear_btn": "Löschen", "log_label": "Log:", "msg_empty": "URLs eingeben!",
                         "msg_stop": "Gestoppt.", "msg_sleeping": "Warte für {} Sekunden...",
                         "status_done": "Abgeschlossen."},
-            "Русский": {"title": "Загрузчик Pro", "url_label": "URL", "param_label": "Аргументы",
+            "Русский": {"title": "Загрузчик Pro "+self.version, "url_label": "URL", "param_label": "Аргументы",
                         "sleep_label": "Пауза (сек):", "reset_btn": "Сброс", "start_btn": "Начать", "stop_btn": "Стоп",
                         "clear_btn": "Очистить", "log_label": "Лог:", "msg_empty": "Введите URL!",
                         "msg_stop": "Остановлено.", "msg_sleeping": "Ожидание {} сек...", "status_done": "Завершено."},
-            "한국어": {"title": "일괄 다운로더 Pro", "url_label": "URL", "param_label": "매개변수", "sleep_label": "대기 시간 (초):",
+            "한국어": {"title": "일괄 다운로더 Pro "+self.version, "url_label": "URL", "param_label": "매개변수", "sleep_label": "대기 시간 (초):",
                     "reset_btn": "초기화", "start_btn": "시작", "stop_btn": "강제 중지", "clear_btn": "삭제", "log_label": "로그:",
                     "msg_empty": "URL 입력!", "msg_stop": "중지됨.", "msg_sleeping": "{}초 동안 대기 중...", "status_done": "완료됨."}
         }
 
         self.is_running = False
         self.current_process = None
-        self.DEFAULT_ARGS = '--cookies "./cookies.txt" --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0" --js-runtimes node -f "bv*[height=720]+ba" --embed-thumbnail --convert-thumbnails png --merge-output-format mkv'
+        self.DEFAULT_ARGS = '--cookies "./cookies.txt" --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0" --js-runtimes node -f "bv*[height=720]+ba" --embed-thumbnail --convert-thumbnails png --merge-output-format mkv --ffmpeg-location "./ffmpeg"'
 
         self.setup_ui()
         self.change_language("English")
