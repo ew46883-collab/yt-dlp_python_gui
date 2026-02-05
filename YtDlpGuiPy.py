@@ -131,6 +131,22 @@ class YtDlpGui:
         self.change_language("English")
 
     def setup_ui(self):
+        import os
+        import sys
+
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的环境
+            base_path = os.path.dirname(sys.executable)
+        else:
+            # 如果是源码运行环境
+            base_path = os.path.dirname(os.path.abspath(__file__))
+
+        icon_path = os.path.join(base_path, "logo.ico")
+
+        # 只有当图标文件确实存在时才加载，防止报错
+        if os.path.exists(icon_path):
+            self.root.iconbitmap(icon_path)
+
         self.root.geometry("900x850")
 
         # 语言选择
