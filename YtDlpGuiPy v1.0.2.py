@@ -422,4 +422,5 @@ class YtDlpGui:
 if __name__ == "__main__":
     root = tk.Tk()
     app = YtDlpGui(root)
+
     root.mainloop()
