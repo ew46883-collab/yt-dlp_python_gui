@@ -4,18 +4,20 @@ import subprocess
 import os
 import threading
 from pathlib import Path
+import json
 
 
 class MKVAttachmentTool:
     def __init__(self, root):
         self.root = root
         self.root.title("MKV 批量附件添加工具 (基于 mkvpropedit)")
-        self.root.geometry("700x600")
+        self.root.geometry("700x700")  # Increased height slightly
 
         # 变量存储
         self.mkv_files = []
         self.attachment_files = []
         self.mkvtoolnix_path = tk.StringVar(value=r"C:\Program Files\MKVToolNix\mkvpropedit.exe")
+        self.remove_keyword = tk.StringVar()
 
         self.create_widgets()
 
@@ -55,11 +57,20 @@ class MKVAttachmentTool:
         self.list_att = tk.Listbox(frame_att, selectmode=tk.EXTENDED, height=4)
         self.list_att.pack(fill="both", expand=True, pady=5)
 
+        # --- 移除附件区域 ---
+        frame_remove = tk.LabelFrame(self.root, text="3. 批量移除附件 (按文件名关键词)", padx=5, pady=5)
+        frame_remove.pack(fill="x", padx=10, pady=5)
+
+        tk.Label(frame_remove, text="关键词:").pack(side="left")
+        tk.Entry(frame_remove, textvariable=self.remove_keyword).pack(side="left", fill="x", expand=True, padx=5)
+        self.btn_remove = tk.Button(frame_remove, text="移除匹配附件", command=self.start_removal_thread)
+        self.btn_remove.pack(side="left", padx=5)
+
         # --- 操作与日志区域 ---
         frame_action = tk.Frame(self.root, padx=5, pady=5)
         frame_action.pack(fill="both", expand=True, padx=10)
 
-        self.btn_run = tk.Button(frame_action, text="开始处理", command=self.start_processing_thread, bg="#DDDDDD",
+        self.btn_run = tk.Button(frame_action, text="开始添加附件", command=self.start_processing_thread, bg="#DDDDDD",
                                  font=("Arial", 10, "bold"))
         self.btn_run.pack(fill="x", pady=5)
 
@@ -135,6 +146,7 @@ class MKVAttachmentTool:
 
         # 禁用按钮防止重复点击
         self.btn_run.config(state="disabled")
+        self.btn_remove.config(state="disabled")
         self.progress['value'] = 0
         self.progress['maximum'] = len(self.mkv_files)
 
@@ -191,8 +203,109 @@ class MKVAttachmentTool:
 
         self.log("-" * 30)
         self.log(f"处理完成。成功: {success_count}/{len(self.mkv_files)}")
-        self.btn_run.config(state="normal")
+        
+        def restore():
+            self.btn_run.config(state="normal")
+            self.btn_remove.config(state="normal")
+        self.root.after(0, restore)
+        
         messagebox.showinfo("完成", f"批量任务结束！\n成功: {success_count} 个文件")
+
+    def start_removal_thread(self):
+        if not self.mkv_files:
+            messagebox.showwarning("提示", "请先添加 MKV 文件！")
+            return
+        keyword = self.remove_keyword.get()
+        if not keyword:
+            messagebox.showwarning("提示", "请输入要移除附件的关键词！")
+            return
+        
+        exe = self.mkvtoolnix_path.get()
+        if not os.path.exists(exe):
+            messagebox.showerror("错误", "找不到 mkvpropedit.exe")
+            return
+        
+        # Check for mkvmerge
+        mkvmerge = os.path.join(os.path.dirname(exe), "mkvmerge.exe")
+        if not os.path.exists(mkvmerge):
+            messagebox.showerror("错误", f"找不到 mkvmerge.exe\n请确保它在 {os.path.dirname(exe)}")
+            return
+
+        self.btn_remove.config(state="disabled")
+        self.btn_run.config(state="disabled")
+        self.progress['value'] = 0
+        self.progress['maximum'] = len(self.mkv_files)
+
+        threading.Thread(target=self.remove_logic, daemon=True).run()
+
+    def remove_logic(self):
+        propedit_path = self.mkvtoolnix_path.get()
+        mkvmerge_path = os.path.join(os.path.dirname(propedit_path), "mkvmerge.exe")
+        keyword = self.remove_keyword.get()
+        success_count = 0
+
+        self.log("-" * 30)
+        self.log(f"开始批量移除包含 '{keyword}' 的附件...")
+
+        for idx, mkv_file in enumerate(self.mkv_files):
+            filename = os.path.basename(mkv_file)
+            self.log(f"正在检查: {filename}")
+
+            try:
+                # Identify
+                cmd_id = [mkvmerge_path, "-J", mkv_file]
+                startupinfo = None
+                if os.name == 'nt':
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                
+                res_id = subprocess.run(cmd_id, capture_output=True, text=True, startupinfo=startupinfo, encoding='utf-8', errors='replace')
+                
+                if res_id.returncode != 0:
+                    self.log(f"❌ 识别失败: {res_id.stderr}")
+                    continue
+                    
+                data = json.loads(res_id.stdout)
+                attachments = data.get("attachments", [])
+                
+                ids_to_remove = []
+                names_removed = []
+                
+                for att in attachments:
+                    name = att.get("file_name", "")
+                    if keyword in name:
+                        ids_to_remove.append(str(att.get("id")))
+                        names_removed.append(name)
+                
+                if not ids_to_remove:
+                    self.log("  无匹配附件。")
+                else:
+                    self.log(f"  删除: {', '.join(names_removed)}")
+                    cmd_del = [propedit_path, mkv_file]
+                    for aid in ids_to_remove:
+                        cmd_del.extend(["--delete-attachment", aid])
+                    
+                    res_del = subprocess.run(cmd_del, capture_output=True, text=True, startupinfo=startupinfo, encoding='utf-8', errors='replace')
+                    if res_del.returncode == 0:
+                        self.log("✅ 删除成功")
+                        success_count += 1
+                    else:
+                        self.log(f"❌ 删除失败: {res_del.stderr}")
+
+            except Exception as e:
+                self.log(f"❌ 异常: {e}")
+            
+            self.root.after(0, lambda v=idx + 1: self.progress.configure(value=v))
+
+        self.log("-" * 30)
+        self.log(f"移除完成。修改文件: {success_count}")
+        
+        def restore():
+            self.btn_remove.config(state="normal")
+            self.btn_run.config(state="normal")
+        
+        self.root.after(0, restore)
+        messagebox.showinfo("完成", f"批量移除任务结束！\n修改文件数: {success_count}")
 
 
 if __name__ == "__main__":
